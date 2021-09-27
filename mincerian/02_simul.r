@@ -34,10 +34,10 @@ results <- foreach(
         filter(!(id %in% train_set$id))
     stopifnot(dim(train_set)[1] + dim(test_set)[1] == dim(simul_df)[1])
     # run models: all four linear functional forms on all four datasets
-    lm_1 <- LM_fits(formulas, train_set, test_set, "ln_y_I")[[2]]
-    lm_2 <- LM_fits(formulas, train_set, test_set, "ln_y_II")[[2]]
-    lm_3 <- LM_fits(formulas, train_set, test_set, "ln_y_III")[[2]]
-    lm_4 <- LM_fits(formulas, train_set, test_set, "ln_y_IV")[[2]]
+    lm_1 <- lm_fits(formulas, train_set, test_set, "ln_y_I")[[2]]
+    lm_2 <- lm_fits(formulas, train_set, test_set, "ln_y_II")[[2]]
+    lm_3 <- lm_fits(formulas, train_set, test_set, "ln_y_III")[[2]]
+    lm_4 <- lm_fits(formulas, train_set, test_set, "ln_y_IV")[[2]]
 
     # run models: GB model on all four datasets
     gb_1 <- fit_xgb(
