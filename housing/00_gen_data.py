@@ -3,7 +3,6 @@
 # Author: Mark Verhagen
 
 # Load libraries
-
 import pandas as pd
 import os
 import itertools
