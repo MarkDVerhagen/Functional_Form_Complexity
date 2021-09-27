@@ -2,17 +2,20 @@
 toy_example/data/
 base_simuls/data/
 housing/data/
+housing/models/
+housing/figs/
 ideology/data/
+mincerian/data/
+toy_example/data/
+venv_chapter3/
+
 .vscode
 .DS_Store
 
 *.rds
 
-housing/
-ideology/
-mincerian/
-mincerian/
-text/tables/
+__pycache__
+tex/tables/
 
 # Log files
 *.log
