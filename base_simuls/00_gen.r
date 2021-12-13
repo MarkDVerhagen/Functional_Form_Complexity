@@ -116,7 +116,7 @@ melt_true <- df_true %>%
     reshape2::melt(id.vars = ("X")) %>%
     mutate(model = "True", data = gsub("y_", "", variable))
 
-total_melt <- rbind(melt_pred_df, melt_simul, melt_true) %>%
+total_melt <- rbind(melt_pred_df, melt_observed, melt_true) %>%
     mutate(data = ifelse(data == "0", "Linear",
         ifelse(data == "1", "Step",
             ifelse(data == "2", "Quadratic",
@@ -125,31 +125,7 @@ total_melt <- rbind(melt_pred_df, melt_simul, melt_true) %>%
         )
     ))
 
-ggplot(total_melt, aes(y = value, x = X)) +
-    geom_point(data = total_melt %>% filter(!(model %in% c("True", "LM"))), alpha = 0.3, aes(color = model)) +
-    geom_line(data = total_melt %>% filter(model == "True"), aes(linetype = model)) +
-    facet_wrap(~data) +
-    xlab("X") +
-    ylab("Y") +
-    scale_color_manual(
-        name = "", values = c(ggsci::pal_aaas("default")(3)[1:3], ggsci::pal_aaas("default")(10)[10]),
-        labels = c("Gradient Boosting", "Random Forest", "Simulated data")
-    ) +
-    scale_linetype_manual(name = "", values = c("solid"), labels = c("True effect")) +
-    cowplot::theme_cowplot() +
-    theme(
-        panel.grid.minor.y = element_line(size = 0.25, linetype = "dotted"),
-        panel.grid.major.y = element_line(size = 0.25, linetype = "dotted"),
-        strip.text.y = element_text(face = "bold", hjust = 0.5, vjust = 0.5),
-        strip.background = element_rect(fill = NA, color = "black", size = 1.5),
-        legend.position = "top",
-        panel.border = element_rect(color = "lightgrey", fill = NA, size = 0.5),
-        text = element_text(size = 20)
-    ) +
-    guides(color = guide_legend(override.aes = list(fill = NA)))
-
-ggsave("../tex/figs/fig1_base.pdf", last_plot(), width = 10, height = 8)
-
+    
 ggplot(total_melt, aes(y = value, x = X)) +
     geom_point(data = total_melt %>% filter(!(model %in% c("True", "LM", "GB", "RF"))), alpha = 0.3, aes(color = model)) +
     geom_line(data = total_melt %>% filter(model == "True"), aes(linetype = model)) +
@@ -164,8 +140,33 @@ ggplot(total_melt, aes(y = value, x = X)) +
     scale_linetype_manual(name = "", values = c("dashed", "solid"), labels = c("Linear Model", "True effect")) +
     cowplot::theme_cowplot() +
     theme(
-        panel.grid.minor.y = element_line(size = 0.25, linetype = "dotted"),
-        panel.grid.major.y = element_line(size = 0.25, linetype = "dotted"),
+        # panel.grid.minor.y = element_line(size = 0.25, linetype = "dotted"),
+        # panel.grid.major.y = element_line(size = 0.25, linetype = "dotted"),
+        strip.text.y = element_text(face = "bold", hjust = 0.5, vjust = 0.5),
+        strip.background = element_rect(fill = NA, color = "black", size = 1.5),
+        legend.position = "top",
+        panel.border = element_rect(color = "lightgrey", fill = NA, size = 0.5),
+        text = element_text(size = 20)
+    ) +
+    guides(color = guide_legend(override.aes = list(fill = NA)))
+
+ggsave("../tex/figs/fig1_base.pdf", last_plot(), width = 10, height = 8)
+
+ggplot(total_melt, aes(y = value, x = X)) +
+    geom_point(data = total_melt %>% filter(!(model %in% c("True", "LM"))), alpha = 0.3, aes(color = model)) +
+    geom_line(data = total_melt %>% filter(model == "True"), aes(linetype = model)) +
+    facet_wrap(~data) +
+    xlab("X") +
+    ylab("Y") +
+    scale_color_manual(
+        name = "", values = c(ggsci::pal_aaas("default")(3)[1:3], ggsci::pal_aaas("default")(10)[10]),
+        labels = c("Gradient Boosting", "Random Forest", "Simulated data")
+    ) +
+    scale_linetype_manual(name = "", values = c("solid"), labels = c("True effect")) +
+    cowplot::theme_cowplot() +
+    theme(
+        # panel.grid.minor.y = element_line(size = 0.25, linetype = "dotted"),
+        # panel.grid.major.y = element_line(size = 0.25, linetype = "dotted"),
         strip.text.y = element_text(face = "bold", hjust = 0.5, vjust = 0.5),
         strip.background = element_rect(fill = NA, color = "black", size = 1.5),
         legend.position = "top",

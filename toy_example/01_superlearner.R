@@ -4,7 +4,7 @@ library(SuperLearner)
 library(parallel)
 library(xtable)
 
-load("toy_data.rda")
+load("toy_example/data/edit/toy_data.rda")
 
 ## -- Linear superlearners
 
@@ -26,7 +26,7 @@ x_train <- df %>%
 y_train <- df %>%
     pull(fall)
 
-cluster <- parallel::makeCluster(5)
+cluster <- parallel::makeCluster(6)
 parallel::clusterEvalQ(cluster, library(SuperLearner))
 parallel::clusterExport(cluster, learners$names)
 parallel::clusterSetRNGStream(cluster, 1704)
@@ -41,7 +41,7 @@ system.time({
 })
 parallel::stopCluster(cluster)
 
-saveRDS(cv_sl_lm1, "cv_sl_lm1.rds")
+saveRDS(cv_sl_lm1, "toy_example/data/final/cv_sl_lm1.rds")
 
 ## Generate SuperLearner for linear model with quadratic age
 x_train <- df %>%
@@ -50,7 +50,7 @@ x_train <- df %>%
 y_train <- df %>%
     pull(fall)
 
-cluster <- parallel::makeCluster(5)
+cluster <- parallel::makeCluster(6)
 parallel::clusterEvalQ(cluster, library(SuperLearner))
 parallel::clusterExport(cluster, learners$names)
 parallel::clusterSetRNGStream(cluster, 1704)
@@ -66,7 +66,7 @@ system.time({
 })
 parallel::stopCluster(cluster)
 
-saveRDS(cv_sl_lm2, "cv_sl_lm2.rds")
+saveRDS(cv_sl_lm2, "toy_example/data/final/cv_sl_lm2.rds")
 
 ## Generate SuperLearner for correctly specified linear model
 
@@ -75,7 +75,7 @@ x_train <- df %>%
 y_train <- df %>%
     pull(fall)
 
-cluster <- parallel::makeCluster(5)
+cluster <- parallel::makeCluster(6)
 parallel::clusterEvalQ(cluster, library(SuperLearner))
 parallel::clusterExport(cluster, learners$names)
 parallel::clusterSetRNGStream(cluster, 1704)
@@ -90,7 +90,7 @@ system.time({
 })
 parallel::stopCluster(cluster)
 
-saveRDS(cv_sl_lm3, "cv_sl_lm3.rds")
+saveRDS(cv_sl_lm3, "toy_example/data/final/cv_sl_lm3.rds")
 
 ## Flexible superlearners
 
@@ -114,13 +114,13 @@ learners_gb <- create.Learner("SL.xgboost",
 )
 
 ## Setup clusters
-cluster <- parallel::makeCluster(5)
+cluster <- parallel::makeCluster(6)
 parallel::clusterEvalQ(cluster, library(SuperLearner))
 parallel::clusterExport(cluster, learners_gb$names)
 parallel::clusterSetRNGStream(cluster, 1704)
 
 system.time({
-    cv_sl <- CV.SuperLearner(
+    cv_sl1 <- CV.SuperLearner(
         Y = y_train, X = x_train,
         cvControl = list(V = 10),
         parallel = cluster,
@@ -130,11 +130,11 @@ system.time({
 
 parallel::stopCluster(cluster)
 
-saveRDS(cv_sl, "cv_sl1.rds")
+saveRDS(cv_sl1, "toy_example/data/final/cv_sl1.rds")
 
 ## Vanilla RF and GB
 
-cluster <- parallel::makeCluster(5)
+cluster <- parallel::makeCluster(6)
 parallel::clusterEvalQ(cluster, library(SuperLearner))
 parallel::clusterExport(cluster, learners$names)
 parallel::clusterSetRNGStream(cluster, 1704)
@@ -155,10 +155,9 @@ system.time({
 })
 parallel::stopCluster(cluster)
 
-saveRDS(cv_sl2, "cv_sl2.rds")
+saveRDS(cv_sl2, "toy_example/data/final/cv_sl2.rds")
 
 ## RF grid
-parallel::stopCluster(cluster)
 mtry_seq <- floor(sqrt(ncol(x_train)) * c(0.5, 1, 2))
 ntree_seq <- c(100, 200, 500)
 
@@ -173,7 +172,7 @@ x_train <- df %>%
 y_train <- df %>%
     pull(fall)
 
-cluster <- parallel::makeCluster(5)
+cluster <- parallel::makeCluster(6)
 parallel::clusterEvalQ(cluster, library(SuperLearner))
 parallel::clusterExport(cluster, learners_rf$names)
 parallel::clusterSetRNGStream(cluster, 1704)
@@ -187,12 +186,21 @@ system.time({
     )
 })
 
-saveRDS(cv_sl3, "cv_sl3.rds")
+parallel::stopCluster(cluster)
+
+saveRDS(cv_sl3, "toy_example/data/final/cv_sl3.rds")
 
 ## Combine all output into single SuperLearner table and transform to RMSE
+cv_sl_lm1 <- readRDS("toy_example/data/final/cv_sl_lm1.rds")
+cv_sl_lm2 <- readRDS("toy_example/data/final/cv_sl_lm2.rds")
+cv_sl_lm3 <- readRDS("toy_example/data/final/cv_sl_lm3.rds")
+
+cv_sl1 <- readRDS("toy_example/data/final/cv_sl1.rds")
+cv_sl2 <- readRDS("toy_example/data/final/cv_sl2.rds")
+cv_sl3 <- readRDS("toy_example/data/final/cv_sl3.rds")
 
 comb_sl <- rbind(
-    summary(cv_sl)$Table %>%
+    summary(cv_sl1)$Table %>%
         filter(!grepl("Super|Discrete|mean|ranger", Algorithm)),
     summary(cv_sl2)$Table %>%
         filter(!grepl("Discrete|mean|ranger|glm|xgboost", Algorithm)),
@@ -220,5 +228,5 @@ comb_sl <- rbind(
 
 print(xtable(comb_sl[order(comb_sl$Ave), ],
     type = "latex",
-    digits = c(0, 0, 4, 4, 4, 4)
+    digits = c(0, 0, 3, 3, 3, 3)
 ), file = "tex/tables/SL_toy.tex")

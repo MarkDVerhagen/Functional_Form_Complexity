@@ -6,6 +6,9 @@
 library(tidyverse)
 library(vtable)
 
+## Load data
+df_effects <- readRDS("toy_example/data/edit/df_effects.rds")
+
 ## Pot implied effects of the age variable
 
 ggplot(df_effects, aes(y = value, x = age, color = variable, linetype = ` `)) +
