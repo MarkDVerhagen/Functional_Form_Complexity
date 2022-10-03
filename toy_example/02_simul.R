@@ -27,6 +27,8 @@ gb_lm1_rmse <- rf_lm1_rmse <- lm2_lm1_rmse <- lm3_lm1_rmse <- c()
 gb_lm2_rmse <- rf_lm2_rmse <- lm3_lm2_rmse <- c()
 gb_lm3_rmse <- rf_lm3_rmse <- c()
 
+lm1_beta <- lm2_beta <- lm3_beta <- c()
+
 oos_r2 <- function(model, X, y) {
     y_pred <- predict(model, X)
     return(1 - sum((y - y_pred)^2) / sum((y - mean(y))^2))
@@ -59,8 +61,8 @@ for (i in 1:n_simul) {
     test_data <- xgb.DMatrix(data = x_test, label = test_outcome)
 
     xg_model <- xgb.train(
-        data = train_data, nrounds = 100,
-        max_depth = 2, eta = 0.1
+        data = train_data, nrounds = 200,
+        max_depth = 1, eta = 0.1
     )
 
     lm1_train <- lm(fall ~ 1 + age + assist
@@ -105,7 +107,19 @@ for (i in 1:n_simul) {
     lm2_lm1_rmse <- c(lm2_lm1_rmse, lm2_rmse - lm1_rmse)
     lm3_lm1_rmse <- c(lm3_lm1_rmse, lm3_rmse - lm1_rmse)
     lm3_lm2_rmse <- c(lm3_lm2_rmse, lm3_rmse - lm2_rmse)
+    
+    lm1_beta <- c(lm1_beta, lm1_train$coefficients["assist"])
+    lm2_beta <- c(lm2_beta, lm2_train$coefficients["assist"])
+    lm3_beta <- c(lm3_beta, lm3_train$coefficients["assist"])
 }
+
+beta_df <- data.frame(
+    "lm1_beta" = lm1_beta,
+    "lm2_beta" = lm2_beta,
+    "lm3_beta" = lm3_beta
+)
+
+write.csv(beta_df, "toy_example/data/edit/beta_toy.csv")
 
 simul_df <- data.frame(
     "gb_rmse" = gb_rmse_c, "gb_r2" = gb_r2_c,

@@ -8,6 +8,9 @@ library(xgboost)
 
 set.seed(1704)
 
+## Load plotting style
+source("./styles.R")
+
 ## Set n and X variable
 n <- 100
 X <- runif(n, -4, 4)
@@ -40,6 +43,11 @@ df <- data.frame(
 )
 
 return_oos_r2 <- function(actual, predict) {
+    ### Function to return the Out-of-Sample R-squared
+    #' @param actual Actual data
+    #' @param predict Predicted data
+    #' @return R2
+
     return(1 - sum((actual - predict)^2) / sum((actual - mean(actual))^2))
 }
 
@@ -51,7 +59,7 @@ train_set <- df_analysis
 
 obs_vars <- c("y_0", "y_1", "y_2", "y_3")
 
-## Obtian outcome value per functional form for trainset
+## Obtain outcome value per functional form for trainset
 train_ys <- lapply(obs_vars, FUN = function(x) {
     train_set[, x]
 })
@@ -75,6 +83,11 @@ rfs <- lapply(train_ys, FUN = function(x) {
 gbs <- lapply(train_ys, FUN = function(x) {
     xgboost(data = as.matrix(X_train), label = x, nrounds = 200)
 })
+
+## Do standard specification tests on linear models
+lapply(lms, function(x) lmtest::resettest(x, power = 2)) ## Rejects 2nd and 3rd
+lapply(lms, function(x) lmtest::resettest(x, power = 2:3)) ## Rejects 2nd-4th
+lapply(lms, function(x) skedastic::white_lm(x)) ## Reject all
 
 ## Plotting
 pred_df <- data.frame(X = seq(-4, 4, 8 / 100))
@@ -119,15 +132,15 @@ melt_true <- df_true %>%
 total_melt <- rbind(melt_pred_df, melt_observed, melt_true) %>%
     mutate(data = ifelse(data == "0", "Linear",
         ifelse(data == "1", "Step",
-            ifelse(data == "2", "Quadratic",
+            ifelse(data == "2", "Polynomial",
                 ifelse(data == "3", "Sine", NA)
             )
         )
     ))
 
-    
 ggplot(total_melt, aes(y = value, x = X)) +
-    geom_point(data = total_melt %>% filter(!(model %in% c("True", "LM", "GB", "RF"))), alpha = 0.3, aes(color = model)) +
+    geom_point(data = total_melt %>% filter(!(model %in% c("True", "LM", "GB", "RF"))),
+               alpha = alpha, aes(color = model), size = scatter_size) +
     geom_line(data = total_melt %>% filter(model == "True"), aes(linetype = model)) +
     geom_line(data = total_melt %>% filter(model == "LM"), aes(linetype = model)) +
     facet_wrap(~data) +
@@ -139,21 +152,14 @@ ggplot(total_melt, aes(y = value, x = X)) +
     ) +
     scale_linetype_manual(name = "", values = c("dashed", "solid"), labels = c("Linear Model", "True effect")) +
     cowplot::theme_cowplot() +
-    theme(
-        # panel.grid.minor.y = element_line(size = 0.25, linetype = "dotted"),
-        # panel.grid.major.y = element_line(size = 0.25, linetype = "dotted"),
-        strip.text.y = element_text(face = "bold", hjust = 0.5, vjust = 0.5),
-        strip.background = element_rect(fill = NA, color = "black", size = 1.5),
-        legend.position = "top",
-        panel.border = element_rect(color = "lightgrey", fill = NA, size = 0.5),
-        text = element_text(size = 20)
-    ) +
+    custom_theme(text_size = 20, hor = T) +
     guides(color = guide_legend(override.aes = list(fill = NA)))
 
-ggsave("../tex/figs/fig1_base.pdf", last_plot(), width = 10, height = 8)
+ggsave("tex/figs/fig1_base.pdf", last_plot(), width = 11, height = 8)
 
 ggplot(total_melt, aes(y = value, x = X)) +
-    geom_point(data = total_melt %>% filter(!(model %in% c("True", "LM"))), alpha = 0.3, aes(color = model)) +
+    geom_point(data = total_melt %>% filter(!(model %in% c("True", "LM"))),
+               alpha = (alpha - 0.05), aes(color = model), size = scatter_size) +
     geom_line(data = total_melt %>% filter(model == "True"), aes(linetype = model)) +
     facet_wrap(~data) +
     xlab("X") +
@@ -164,15 +170,7 @@ ggplot(total_melt, aes(y = value, x = X)) +
     ) +
     scale_linetype_manual(name = "", values = c("solid"), labels = c("True effect")) +
     cowplot::theme_cowplot() +
-    theme(
-        # panel.grid.minor.y = element_line(size = 0.25, linetype = "dotted"),
-        # panel.grid.major.y = element_line(size = 0.25, linetype = "dotted"),
-        strip.text.y = element_text(face = "bold", hjust = 0.5, vjust = 0.5),
-        strip.background = element_rect(fill = NA, color = "black", size = 1.5),
-        legend.position = "top",
-        panel.border = element_rect(color = "lightgrey", fill = NA, size = 0.5),
-        text = element_text(size = 20)
-    ) +
+    custom_theme(text_size = 20, hor = T) +
     guides(color = guide_legend(override.aes = list(fill = NA)))
 
-ggsave("../tex/figs/fig1_base2.pdf", last_plot(), width = 10, height = 8)
+ggsave("tex/figs/fig1_base2.pdf", last_plot(), width = 11, height = 8)

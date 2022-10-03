@@ -199,6 +199,8 @@ cv_sl1 <- readRDS("toy_example/data/final/cv_sl1.rds")
 cv_sl2 <- readRDS("toy_example/data/final/cv_sl2.rds")
 cv_sl3 <- readRDS("toy_example/data/final/cv_sl3.rds")
 
+comb_sl[order(comb_sl$Ave, decreasing = F), ]
+
 comb_sl <- rbind(
     summary(cv_sl1)$Table %>%
         filter(!grepl("Super|Discrete|mean|ranger", Algorithm)),

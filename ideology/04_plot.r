@@ -9,18 +9,11 @@ library(cowplot)
 library(ggsci)
 library(vtable)
 
-custom_theme <- theme(
-    panel.grid.minor.y = element_line(size = 0.25, linetype = "dotted"),
-    panel.grid.major.y = element_line(size = 0.25, linetype = "dotted"),
-    strip.text.y = element_text(face = "bold", hjust = 0.5, vjust = 0.5),
-    strip.background = element_rect(fill = NA, color = "black", size = 1.5),
-    legend.position = "top",
-    panel.border = element_rect(color = "lightgrey", fill = NA, size = 0.5),
-    text = element_text(size = 20)
-)
+## Load plot style
+source("./styles.R")
 
 ## Descriptive tables
-data_raw <- readRDS("data/raw/GSS7218_R3.rds")
+data_raw <- readRDS("./ideology/data/raw/GSS7218_R3.Rds")
 
 data <- data_raw %>%
     filter(
@@ -178,15 +171,21 @@ ggplot(df_oos_melt %>% filter(outcome_type == "R-Squared"), aes(
     ),
     position = position_dodge(width = 0.9), width = 0.2
     ) +
-    ggsci::scale_fill_aaas(name = "", labels = c("Flexible", "Hypothesized")) +
+    scale_fill_manual(
+    name = "Model",
+    values = ggsci::pal_aaas("default")(4)[3:4],
+    labels = c("GB", "Hypothesized")) +
+    # ggsci::scale_fill_aaas(name = "", ) +
     xlim(0, 0.18) +
     cowplot::theme_cowplot() +
-    custom_theme +
-    theme(axis.text.y = element_text(size = 16)) +
+    custom_theme(text_size = 20, ver = T) +
     ylab("Explanatory variables") +
-    xlab("Out-of-sample R-squared")
+    xlab("Out-of-sample R-squared") +
+    theme(axis.text.y = element_text(size = 16),
+          axis.title.y = element_text(size = 21),
+          axis.title.x = element_text(size = 21))
 
-ggsave("tex/figs/fig1_gss.pdf", last_plot(), width = 12, height = 10)
+ggsave("tex/figs/fig1_gss.pdf", last_plot(), width = 12, height = 7)
 
 ## (Interaction) shap plots
 int_shap_df <- read.csv("ideology/data/edit/int_shap_values.csv")
@@ -258,18 +257,19 @@ plot_a1_df <- plot_a1_df %>%
     ))
 
 panel_A <- ggplot(plot_a1_df, aes(y = value, x = data, color = variable)) +
-    geom_point(alpha = 0.1) +
-    geom_smooth(se = F) +
+    geom_point(alpha = (alpha - 0.1), size = (scatter_size - 1)) +
+    # geom_smooth(se = F) +
     geom_line(aes(y = linear, x = data, linetype = "Linear"), color = "black") +
     geom_line(aes(
         y = quadratic, x = data,
         linetype = "Quadratic"
     ), color = "black") +
     facet_wrap(~variable, scales = "free", ncol = 1) +
-    ggsci::scale_color_aaas(name = "Variable") +
+        scale_colour_manual(name = "Variable",
+                            values = MetBrewer::met.brewer("Egypt")[1:3]) +
     scale_linetype_manual(name = "", values = c("solid", "dashed")) +
     cowplot::theme_cowplot() +
-    custom_theme +
+    custom_theme(text_size = 20, hor = T) +
     ylab("Implied effect") +
     xlab("Observed variable value") +
     theme(
@@ -277,14 +277,13 @@ panel_A <- ggplot(plot_a1_df, aes(y = value, x = data, color = variable)) +
         legend.text = element_text(size = 14)
     )
 
-
 ggsave("tex/figs/fig2_gss.pdf", last_plot())
 
 # Panel B
 panel_B <- ggplot(int_shap_df, aes(y = age_year_shap, x = age, color = year)) +
-    geom_point(alpha = 0.5) +
+    geom_point(alpha = alpha, size = (scatter_size - 2)) +
     cowplot::theme_cowplot() +
-    custom_theme +
+    custom_theme(text_size = 19, hor = T) +
     xlab("Age") +
     ylab("Difference in age effect by survey year") +
     scale_colour_distiller(
@@ -299,10 +298,12 @@ panel_C <- ggplot(int_shap_df, aes(
     y = age_race_shap, x = age,
     color = as.factor(race)
 )) +
-    geom_point(alpha = 0.5) +
-    cowplot::theme_cowplot() +
-    scale_color_aaas(name = "Race", labels = c("White", "Black", "Other")) +
-    custom_theme +
+    geom_point(alpha = alpha, size = (scatter_size - 1)) +
+        cowplot::theme_cowplot() +
+        scale_color_manual(name = "Race", labels = c("White", "Black", "Other"),
+                           values = MetBrewer::met.brewer("Hokusai1")[c(1, 5, 7)]) +
+    # scale_color_aaas() +
+    custom_theme(hor = T, text_size = 19) +
     xlab("Age") +
     ylab("Difference in age effect by race") +
     theme(legend.position = "right") +
@@ -313,17 +314,17 @@ panel_D <- ggplot(int_shap_df, aes(
     y = race_sex_shap, x = race,
     color = as.factor(sex)
 )) +
-    geom_point(alpha = 0.5) +
+    geom_point(alpha = alpha, size = (scatter_size - 1)) +
     cowplot::theme_cowplot() +
     scale_color_manual(
         name = "Race", labels = c("Male", "Female"),
-        values = ggsci::pal_aaas("default")(5)[4:5]
+        values = MetBrewer::met.brewer("Signac")[c(3, 13)]
     ) +
-    custom_theme +
+    custom_theme(text_size = 19, hor = T) +
     xlab("Race") +
     ylab("Difference in race effect by sex") +
     scale_x_continuous(
-        labels = c("Wite", "Black", "Other"),
+        labels = c("White", "Black", "Other"),
         breaks = c(1, 2, 3)
     ) +
     theme(legend.position = "right") +
@@ -334,19 +335,20 @@ panel_E <- ggplot(int_shap_df, aes(
     y = income_race_shap, x = income,
     color = as.factor(race)
 )) +
-    geom_point(alpha = 0.5) +
+    geom_point(alpha = alpha, size = (scatter_size - 1)) +
     cowplot::theme_cowplot() +
-    scale_color_aaas(name = "Race", labels = c("White", "Black", "Other")) +
-    custom_theme +
+    scale_color_manual(name = "Race", labels = c("White", "Black", "Other"),
+                       values = MetBrewer::met.brewer("Hokusai1")[c(1, 5, 7)]) +
+    custom_theme(text_size = 19, hor = T) +
     xlab("Income") +
     ylab("Difference in income effect by race") +
     theme(legend.position = "right") +
     theme(legend.title = element_blank())
 
 ggdraw() +
-    draw_plot(panel_A, x = 0, y = 0, width = .33, height = 0.95) +
-    draw_plot(panel_B, x = .33, y = .5, width = .33, height = .45) +
-    draw_plot(panel_C, x = .33, y = 0, width = .33, height = .45) +
+    draw_plot(panel_A, x = 0, y = 0, width = .31, height = 0.95) +
+    draw_plot(panel_B, x = .34, y = .5, width = .33, height = .45) +
+    draw_plot(panel_C, x = .34, y = 0, width = .33, height = .45) +
     draw_plot(panel_D, x = .67, y = .5, width = .33, height = .45) +
     draw_plot(panel_E, x = .67, y = 0, width = .33, height = .45) +
     draw_plot_label(
@@ -356,8 +358,9 @@ ggdraw() +
             "C. Age and Race interaction", "D. Race and Sex interaction",
             "E. Income and Race interaction"
         ), size = 20,
-        x = c(0, 0.33, 0.33, 0.67, 0.67), y = c(1, 1, 0.5, 1, 0.5)
+        x = c(-0.05, 0.28, 0.28, 0.62, 0.62), y = c(1, 1, 0.5, 1, 0.5)
     )
 
 
 ggsave("tex/figs/fig3_gss.pdf", last_plot(), width = 20, height = 12)
+

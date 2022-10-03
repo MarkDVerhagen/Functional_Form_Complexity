@@ -15,17 +15,16 @@ data_dir = os.path.join(os.path.abspath(''), 'data', 'edit')
 
 df = pd.read_csv(os.path.join(data_dir, 'toy_df.csv'))
 
-X_train, X_test, y_train, y_test = train_test_split(df[['age', 'sex', 'med_use', 'assist']],
-                                                    df[['fall']], test_size = 0.2,
-                                                    random_state=1704)
+X = df[['age', 'sex', 'med_use', 'assist']]
+y = df[['fall']]
 
 gb = GradientBoostingRegressor()    ## Defaults are already amongst top performing algorithms in SL
-gb.fit(X_train.to_numpy(), y_train[['fall']].values.ravel())
+gb.fit(X.to_numpy(), y[['fall']].values.ravel())
 
 explainer_gb = shap.Explainer(gb)
 explainer_gb.expected_value = explainer_gb.expected_value[0]
 
-shap_gb_values = explainer_gb(X_test)
+shap_gb_values = explainer_gb(X)
 
 with open(os.path.join(data_dir, 'shap_values_toy.pkl'), 'wb') as f:
     pickle.dump(shap_gb_values, f)

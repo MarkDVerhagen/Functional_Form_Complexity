@@ -7,8 +7,14 @@ library(ggsci)
 library(ggpubr)
 library(vtable)
 
+## Load plot styles
+source("./styles.R")
+
+## Load functions
+source("mincerian/functions.R")
+
 ## Make descriptipve table
-df <- read.csv("data/edit/analysis_df.csv") %>%
+df <- read.csv("mincerian/data/edit/analysis_df.csv") %>%
   dplyr::select(-X.1)
 
 labs <- data.frame(
@@ -31,8 +37,7 @@ df %>%
   )
 
 ## Plot OOS performance
-source("mincerian/functions.R")
-data <- readRDS("data/final/simul_4models_100.rds")
+data <- readRDS("mincerian/data/final/simul_4models_10.rds")
 
 df <- data %>%
   mutate(
@@ -75,7 +80,7 @@ df_melt <- df %>%
       ifelse(grepl("\\d{1}_2", variable), "Linear II",
         ifelse(grepl("\\d{1}_3", variable), "Linear III",
           ifelse(grepl("\\d{1}_4", variable), "Linear IV",
-            ifelse(grepl("gb", variable), "XGBoost",
+            ifelse(grepl("gb", variable), "GB",
               "Other"
             )
           )
@@ -102,11 +107,9 @@ custom_pal <- c(
 )
 
 df_plot$model <- factor(df_plot$model, levels = c(
-  "XGBoost", "Linear I", "Linear II",
+  "GB", "Linear I", "Linear II",
   "Linear III", "Linear IV"
 ))
-text_size <- 20
-
 
 ggplot(df_plot, aes(y = mean, x = model, group = dataset, fill = model)) +
   geom_bar(stat = "identity", color = "black") +
@@ -114,7 +117,7 @@ ggplot(df_plot, aes(y = mean, x = model, group = dataset, fill = model)) +
     vjust = -0.5
   ) +
   geom_hline(yintercept = 0.9, linetype = "dashed") +
-  scale_fill_manual(values = custom_pal, name = "") +
+  scale_fill_manual(values = custom_pal, name = "Model") +
   ylim(0, 1) +
   scale_y_continuous(
     limits = c(0.5, 1.05), oob = scales::rescale_none,
@@ -125,26 +128,17 @@ ggplot(df_plot, aes(y = mean, x = model, group = dataset, fill = model)) +
   cowplot::theme_cowplot() +
   xlab("Model") +
   ylab("Out-of-sample R-squared") +
-  theme(
-    panel.grid.minor.x = element_line(size = 0.25), # linetype = 'dotted'),
-    strip.text.y = element_text(face = "bold", hjust = 0.5, vjust = 0.5),
-    strip.background = element_rect(fill = NA, color = "black", size = 1.5),
-    legend.position = "top",
-    panel.border = element_rect(color = "lightgrey", fill = NA, size = 0.5),
-    text = element_text(size = 20)
-  ) +
+  custom_theme(text_size = 20, hor = T) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1, size = (text_size - 1)),
-    axis.text.y = element_text(size = (text_size - 1)),
-    axis.title.y = element_text(size = 16.3)
+    axis.text.y = element_text(size = (text_size - 1))
   ) +
   scale_y_continuous(labels = scales::percent, limits = c(0, 1))
 
-ggsave("tex/figs/fig1_mincerian.pdf", last_plot(), width = 12, height = 6)
+ggsave("tex/figs/fig1_mincerian.pdf", last_plot(), width = 12, height = 7)
 
 ## Plot in-sample regression results
-
-analysis_df <- read.csv("data/edit/analysis_df.csv")
+analysis_df <- read.csv("mincerian/data/edit/analysis_df.csv")
 
 form_0 <- as.formula("ln_y ~ 1")
 form_1 <- as.formula("ln_y ~ 1 + S + X")
@@ -239,7 +233,7 @@ ggsave("tex/figs/fig2_mincerian.pdf", last_plot(), width = 12, height = 8)
 
 ## -- Shapley plots
 
-df <- read.csv("data/edit/mincerian_shap.csv") %>%
+df <- read.csv("mincerian/data/edit/mincerian_shap.csv") %>%
   rowwise() %>%
   mutate(
     S1 = as.numeric(S1),
@@ -358,20 +352,11 @@ X_shap_plot <- ggplot(
   ggsci::scale_color_aaas() +
   xlab("Work experience (years)") +
   ylab("Implied effect on log wages") +
-  scale_linetype_manual(values = c("solid", "dashed", "twodash", "dotted")) +
+  scale_linetype_manual(name = "Model", values = c("solid", "dashed", "twodash", "dotted")) +
   theme_cowplot() +
   guides(color = guide_legend(override.aes = list(fill = NA))) +
   facet_wrap(~dataset, nrow = 1) +
-  theme(
-    panel.grid.minor.y = element_line(size = 0.25, linetype = "dotted"),
-    panel.grid.major.y = element_line(size = 0.25, linetype = "dotted"),
-    strip.text.y = element_text(face = "bold", hjust = 0.5, vjust = 0.5),
-    strip.background = element_rect(fill = NA, color = "black", size = 1.5),
-    legend.position = "top",
-    panel.border = element_rect(color = "lightgrey", fill = NA, size = 0.5),
-    text = element_text(size = 20),
-    legend.title = element_blank()
-  )
+  custom_theme(text_size = 20, hor = T)
 
 S_shap_plot <- ggplot(
   df_melt_S %>% filter(!grepl("shap", variable)),
@@ -386,18 +371,9 @@ S_shap_plot <- ggplot(
   geom_line(aes(linetype = model), color = "black", size = 0.8) +
   xlab("Schooling (years)") +
   ylab("Implied effect on log wages") +
-  scale_linetype_manual(values = c("solid", "dashed", "twodash", "dotted")) +
+  scale_linetype_manual(name = "Model", values = c("solid", "dashed", "twodash", "dotted")) +
   theme_cowplot() +
-  theme(
-    panel.grid.minor.y = element_line(size = 0.25, linetype = "dotted"),
-    panel.grid.major.y = element_line(size = 0.25, linetype = "dotted"),
-    strip.text.y = element_text(face = "bold", hjust = 0.5, vjust = 0.5),
-    strip.background = element_rect(fill = NA, color = "black", size = 1.5),
-    legend.position = "top",
-    panel.border = element_rect(color = "lightgrey", fill = NA, size = 0.5),
-    text = element_text(size = 20),
-    legend.title = element_blank()
-  ) +
+  custom_theme(text_size = 20, hor = T) +
   guides(color = guide_legend(override.aes = list(fill = NA))) +
   facet_wrap(~dataset, nrow = 1)
 
@@ -406,4 +382,4 @@ ggarrange(X_shap_plot + theme(legend.position = "none"),
   nrow = 2, common.legend = TRUE, legend = "top"
 )
 
-ggsave("tex/figs/fig3_mincerian.pdf", last_plot(), width = 12, height = 8)
+ggsave("tex/figs/fig3_mincerian.pdf", last_plot(), width = 12, height = 9)
